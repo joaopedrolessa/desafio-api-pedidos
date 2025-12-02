@@ -177,9 +177,6 @@ Notas técnicas e boas práticas
 - Senhas são armazenadas com `bcryptjs` e a autenticação usa JWT (`jsonwebtoken`).
 - Para projetos reais, recomenda-se usar migrations (por exemplo `knex` ou `sequelize`) em vez de criar esquema inline.
 
-Contribuição
-- Abra uma issue ou envie um Pull Request com alterações claras e testes quando aplicável.
-
 Licença
 - MIT (se desejar, ajuste conforme necessário)
 
