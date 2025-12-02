@@ -178,6 +178,6 @@ Notas técnicas e boas práticas
 - Para projetos reais, recomenda-se usar migrations (por exemplo `knex` ou `sequelize`) em vez de criar esquema inline.
 
 Licença
-- MIT (se desejar, ajuste conforme necessário)
+- MIT
 
 ---
