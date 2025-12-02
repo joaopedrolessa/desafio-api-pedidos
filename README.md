@@ -57,6 +57,20 @@ Requisitos
 - Node.js 18+ (testado com Node 22)
 
 Como rodar localmente
+# Desafio: API Pedidos
+
+API simples em Node.js/Express para gerenciar pedidos (orders) com persistência em SQLite.
+
+Sumário
+- Endpoints principais: criar, buscar por id, listar, atualizar (valor) e deletar pedidos.
+- Autenticação: JWT (rota `POST /login`). Usuário seed `admin` (via `npm run seed`).
+- Validação: `express-validator` aplicada nas rotas de criação e atualização.
+- Documentação: OpenAPI em `/docs` (Swagger UI).
+
+Requisitos
+- Node.js 18+ (recomendado)
+
+Instalação
 1. Instale dependências:
 
 ```powershell
@@ -64,8 +78,9 @@ npm install
 ```
 
 2. (Opcional) Defina variáveis de ambiente:
+
 - `SECRET_KEY` — chave secreta para JWT (recomendado)
-- `SEED_USERNAME` / `SEED_PASSWORD` — usuário e senha do seed (opcional)
+- `SEED_USERNAME` / `SEED_PASSWORD` — credenciais do usuário seed (opcional)
 
 Exemplo (PowerShell):
 
@@ -74,68 +89,100 @@ $env:SECRET_KEY = 'troque_esta_chave'
 $env:SEED_PASSWORD = '123456'
 ```
 
-3. Criar usuário seed (executa apenas se usuário não existir):
+Criar usuário seed
 
 ```powershell
 npm run seed
 ```
 
-4. Iniciar servidor:
+Iniciar servidor
 
 ```powershell
 npm start
 ```
 
-Endpoints principais
+Documentação (Swagger)
+- Ao rodar a aplicação localmente, abra: `http://localhost:3000/docs`
 
-- GET /docs (Swagger UI) — documentação interativa da API
-
-- POST /login
-  - Body: `{ "username": "admin", "password": "123456" }`
-  - Retorna: `{ user, token }`
-
-- POST /order (protected)
-  - Headers: `Authorization: Bearer <token>`
-  - Body de exemplo:
+Autenticação
+- Para acessar rotas protegidas, faça login em `POST /login` com JSON:
 
 ```json
 {
-  "numeroPedido": "v10089016vdb-01",
-  "valorTotal": 10000,
-  "dataCriacao": "2023-07-19T12:24:11.529Z",
-  "items": [
-    { "idItem": "2434", "quantidadeItem": 1, "valorItem": 1000 }
-  ]
+  "username": "admin",
+  "password": "123456"
 }
 ```
 
-- GET /order/:id (protected)
-- GET /order/list (protected)
-- PUT /order/:id (protected) — atualiza `valorTotal` (campo `valorTotal` no body)
-- DELETE /order/:id (protected)
-
-Observações técnicas e melhorias possíveis
-- A criação de `order` + `items` é atômica (transação) — implementado para evitar inconsistências.
-- A autenticação está implementada com `users` no SQLite e `bcryptjs` para hashing de senha.
-- Recomenda-se usar migrations (ex.: `knex`) em projetos reais e remover inicialização inline do schema.
-- Para avaliações: adicione testes automatizados (Jest) e publique o repositório no GitHub com commits claros.
-
-Testes manuais rápidos (PowerShell)
-
-1) Obter token:
+Exemplo: obter token (PowerShell)
 
 ```powershell
-$resp = Invoke-RestMethod -Method POST -Uri http://localhost:3000/login -Body (ConvertTo-Json @{ username='admin'; password='123456' }) -ContentType 'application/json'
-$token = $resp.token
-
-# Criar order usando token
-$body = @{ numeroPedido = 'v10089016vdb-01'; valorTotal = 10000; dataCriacao = '2023-07-19T12:24:11.529Z'; items = @(@{ idItem='2434'; quantidadeItem=1; valorItem=1000 }) } | ConvertTo-Json -Depth 5
-Invoke-RestMethod -Method POST -Uri http://localhost:3000/order -Body $body -ContentType 'application/json' -Headers @{ Authorization = "Bearer $token" }
+#$resp = Invoke-RestMethod -Method POST -Uri http://localhost:3000/login -Body (ConvertTo-Json @{ username='admin'; password='123456' }) -ContentType 'application/json'
+#$token = $resp.token
 ```
 
-Entrega
-- Se quiser, posso criar uma branch, commitar as mudanças e preparar a mensagem de PR. Quando quiser, diga o nome da branch — ou eu uso `chore/finish-evaluation`.
+Exemplos de uso (cURL)
+
+- Criar pedido (POST /order)
+
+```bash
+curl -X POST http://localhost:3000/order \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "numeroPedido": "v10089016vdb-01",
+    "valorTotal": 10000,
+    "dataCriacao": "2023-07-19T12:24:11.529Z",
+    "items": [
+      { "idItem": "2434", "quantidadeItem": 1, "valorItem": 1000 }
+    ]
+  }'
+```
+
+- Buscar pedido por id (GET /order/:id)
+
+```bash
+curl -H "Authorization: Bearer <TOKEN>" http://localhost:3000/order/v10089016vdb-01
+```
+
+Observações para PowerShell
+- `Invoke-RestMethod` lança exceção em respostas HTTP não-2xx; use `try/catch` para capturar o corpo de erro. Exemplo resumido:
+
+```powershell
+try {
+  $resp = Invoke-RestMethod -Method GET -Uri http://localhost:3000/order/v10089016vdb-01 -Headers @{ Authorization = "Bearer $token" }
+  Write-Output ($resp | ConvertTo-Json -Depth 5)
+} catch {
+  $webExc = $_.Exception
+  if ($webExc.Response -ne $null) {
+    $reader = New-Object System.IO.StreamReader($webExc.Response.GetResponseStream())
+    $body = $reader.ReadToEnd()
+    Write-Output "Erro HTTP: $body"
+  } else {
+    Write-Output "Erro inesperado: $($webExc.Message)"
+  }
+}
+```
+
+Testes
+
+- O projeto inclui um teste unitário básico para `OrderService.create` usando Jest.
+
+```powershell
+npm test
+```
+
+Notas técnicas e boas práticas
+- A criação de `order` + `items` é feita de forma atômica (transação) para evitar inconsistências.
+- Senhas são armazenadas com `bcryptjs` e a autenticação usa JWT (`jsonwebtoken`).
+- Para projetos reais, recomenda-se usar migrations (por exemplo `knex` ou `sequelize`) em vez de criar esquema inline.
+
+Contribuição
+- Abra uma issue ou envie um Pull Request com alterações claras e testes quando aplicável.
+
+Licença
+- MIT (se desejar, ajuste conforme necessário)
 
 ---
 
-Arquivo(s) alterados nesta etapa: comentários/todos, validações, autenticação, transação, seed.
+Arquivo(s) alterados nesta etapa: `README.md` (conteúdo refatorado para apresentação profissional).
