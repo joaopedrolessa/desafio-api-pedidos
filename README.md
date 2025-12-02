@@ -184,5 +184,3 @@ Licença
 - MIT (se desejar, ajuste conforme necessário)
 
 ---
-
-Arquivo(s) alterados nesta etapa: `README.md` (conteúdo refatorado para apresentação profissional).
